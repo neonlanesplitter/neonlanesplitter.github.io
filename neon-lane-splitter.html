@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neon Lane Splitter</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #050510;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+  }
+  #gameCanvas {
+    display: block;
+    border: 2px solid #1a0a3a;
+    box-shadow: 0 0 40px rgba(120,0,255,0.5), 0 0 80px rgba(120,0,255,0.2);
+    image-rendering: pixelated;
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<script>
+(function () {
+
+  /* =====================================================================
+     NEON LANE SPLITTER — Arcade Racing (Vista Aérea 2D)
+     Canvas: 800 × 600 · Sin librerías externas
+     ===================================================================== */
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx    = canvas.getContext('2d');
+  const W = 800, H = 600;
+
+  /* ── CONSTANTES DE LA CARRETERA ─────────────────────────────────────── */
+  const ROAD_X     = 220;   // Borde izquierdo de la carretera
+  const ROAD_W     = 360;   // Anchura total de la carretera
+  const ROAD_RIGHT = ROAD_X + ROAD_W; // = 660
+  const LANE_COUNT = 6;
+  const LANE_W     = ROAD_W / LANE_COUNT; // ~86px por carril
+
+  /* ── CONSTANTES TUNEABLES ────────────────────────────────────────────── */
+  const PLAYER_W          = 36;
+  const PLAYER_H          = 56;
+  const OBSTACLE_W        = LANE_W - 8;  // Ocupa casi todo el carril
+  const OBSTACLE_H        = 77;
+  const LATERAL_ACCEL     = 0.9;  // Aceleración lateral (px/frame²)
+  const LATERAL_FRICTION  = 0.82; // Fricción → desacelera horizontalmente
+  const MAX_LATERAL_SPEED = 13.0;  // Velocidad lateral máxima
+  const BASE_ROAD_SPEED   = 7.0;  // Velocidad inicial de la carretera
+  const SPEED_STEP        = 1.4;  // +velocidad cada 10 s
+  const OBSTACLE_SPAWN_INTERVAL = 48;  // Frames entre aparición de obstáculos
+  /* ── FUERZA DE IMPACTO entre jugadores ─────────────────────────────── */
+  const COLLISION_PUSH    = 6.5;  // ← Ajusta aquí la fuerza del empujón (px/frame velocidad)
+  const COLLISION_BOUNCE  = 0.4;  // ← Factor de rebote adicional (0=nada, 1=elástico total)
+
+  /* ── PALETA DE NEÓN ─────────────────────────────────────────────────── */
+  const C = {
+    bg:          '#050510',
+    bgAlt:       '#080818',
+    road:        '#0d0d20',
+    roadEdge:    '#7000ff',
+    roadEdgeGlow:'rgba(112,0,255,0.5)',
+    laneLine:    '#1a1a3a',
+    laneGlow:    'rgba(60,0,180,0.3)',
+    p1:          '#00c8ff',   // Azul neón (jugador 1)
+    p1glow:      'rgba(0,200,255,0.6)',
+    p1dark:      '#004466',
+    p2:          '#ff2d96',   // Rosa neón (jugador 2)
+    p2glow:      'rgba(255,45,150,0.6)',
+    p2dark:      '#440028',
+    enemy:       '#ff3030',   // Rojo neón (obstáculos)
+    enemyGlow:   'rgba(255,48,48,0.55)',
+    enemyDark:   '#440000',
+    ui:          '#e0e0ff',
+    uiDim:       '#7070aa',
+    score1:      '#00c8ff',
+    score2:      '#ff2d96',
+    gold:        '#ffd700',
+    win:         '#ffe060',
+    winGlow:     'rgba(255,224,96,0.5)',
+    title:       '#cc88ff',
+    titleGlow:   'rgba(200,100,255,0.7)',
+    explosion:   ['#ff6000','#ff3000','#ffcc00','#ff0060','#ffffff'],
+  };
+
+  /* ── ESTADO GLOBAL ──────────────────────────────────────────────────── */
+  // 'menu' | 'playing' | 'gameover'
+  let gameState   = 'menu';
+  let mode        = 1;   // 1 o 2 jugadores
+  let frameCount  = 0;
+  let roadOffset  = 0;
+  let roadSpeed   = BASE_ROAD_SPEED;
+  let spawnTimer  = 0;
+  let speedTimer  = 0;   // En segundos (aumenta c/15s)
+  let lastTime    = 0;
+  let deltaAcc    = 0;   // Acumulador de tiempo en segundos (para puntuación por segundo)
+  let particles   = [];
+  let obstacles   = [];
+  let keys        = {};
+  let bgStars     = [];
+
+  /* ── JUGADORES ──────────────────────────────────────────────────────── */
+  function makePlayer(id, x, color, colorGlow, colorDark) {
+    return {
+      id, x, y: H - 120,
+      vx: 0,       // Velocidad lateral
+      w: PLAYER_W, h: PLAYER_H,
+      color, colorGlow, colorDark,
+      alive: true,
+      score: 0,
+      exploding: false,
+      explodeTimer: 0,
+      trail: [],
+    };
+  }
+
+  let p1, p2;
+
+  /* ── INICIALIZAR / REINICIAR ─────────────────────────────────────────── */
+  function init(selectedMode) {
+    mode       = selectedMode || mode;
+    frameCount = 0;
+    roadOffset = 0;
+    roadSpeed  = BASE_ROAD_SPEED;
+    spawnTimer = 0;
+    speedTimer = 0;
+    deltaAcc   = 0;
+    particles  = [];
+    obstacles  = [];
+
+    p1 = makePlayer(1, ROAD_X + ROAD_W * 0.30 - PLAYER_W / 2, C.p1, C.p1glow, C.p1dark);
+    p2 = makePlayer(2, ROAD_X + ROAD_W * 0.70 - PLAYER_W / 2, C.p2, C.p2glow, C.p2dark);
+    p2.alive = (mode === 2);
+
+    generateStars();
+    gameState = 'playing';
+  }
+
+  function generateStars() {
+    bgStars = [];
+    for (let i = 0; i < 80; i++) {
+      bgStars.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: Math.random() * 1.2 + 0.3,
+        a: Math.random() * 0.7 + 0.3,
+        speed: Math.random() * 0.4 + 0.1,
+      });
+    }
+  }
+
+  /* ================================================================
+     UPDATE — Lógica principal
+     ================================================================ */
+  function update(dt) {
+    if (gameState !== 'playing') return;
+
+    frameCount++;
+    roadOffset = (roadOffset + roadSpeed) % 40;
+
+    // ── Dificultad progresiva: +velocidad cada 15 s ────────────────
+    speedTimer += dt;
+    if (speedTimer >= 7) {
+      speedTimer -= 7;
+      roadSpeed += SPEED_STEP;   // ← Ajusta SPEED_STEP arriba
+    }
+
+    // ── Puntuación por tiempo vivo ─────────────────────────────────
+    deltaAcc += dt;
+    if (deltaAcc >= 1) {
+      deltaAcc -= 1;
+      if (p1.alive && !p1.exploding) p1.score++;
+      if (p2.alive && !p2.exploding) p2.score++;
+    }
+
+    // ── Input → movimiento lateral de jugadores ────────────────────
+    updatePlayerMovement(p1, 'KeyA', 'KeyD');
+    if (mode === 2) updatePlayerMovement(p2, 'ArrowLeft', 'ArrowRight');
+
+    // ── Mover estrellas de fondo ───────────────────────────────────
+    for (const s of bgStars) {
+      s.y += s.speed * (roadSpeed / BASE_ROAD_SPEED);
+      if (s.y > H) { s.y = -2; s.x = Math.random() * W; }
+    }
+
+    // ── Spawnear obstáculos ────────────────────────────────────────
+    spawnTimer++;
+    const interval = Math.max(35, OBSTACLE_SPAWN_INTERVAL - Math.floor(roadSpeed * 4));
+    if (spawnTimer >= interval) {
+      spawnTimer = 0;
+      spawnObstacle();
+    }
+
+    // ── Mover obstáculos ───────────────────────────────────────────
+    for (const o of obstacles) o.y += roadSpeed * 1.05;
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+      if (obstacles[i].y > H + 80) obstacles.splice(i, 1);
+    }
+
+    // Con carriles fijos no hay solapamiento lateral entre obstáculos.
+
+    // ── Colisión jugadores vs obstáculos ──────────────────────────
+    checkPlayerObstacleCollisions();
+
+    // ── Colisión entre jugadores (solo modo 2) ───────────────────
+    if (mode === 2 && p1.alive && p2.alive && !p1.exploding && !p2.exploding) {
+      checkPlayerPlayerCollision();
+    }
+
+    // ── Actualizar partículas ─────────────────────────────────────
+    updateParticles();
+
+    // ── Trails ────────────────────────────────────────────────────
+    updateTrail(p1);
+    if (mode === 2) updateTrail(p2);
+
+    // ── Fin de explosiones ─────────────────────────────────────────
+    checkExplosionDone(p1);
+    checkExplosionDone(p2);
+
+    // ── Comprobar Game Over ────────────────────────────────────────
+    // En modo 2: si cualquier jugador muere, game over inmediato
+    if (mode === 2 && (!p1.alive || !p2.alive) && !p1.exploding && !p2.exploding) {
+      gameState = 'gameover';
+      return;
+    }
+
+    const p1Done = !p1.alive || p1.exploding;
+    const p2Done = (mode === 1) || !p2.alive || p2.exploding;
+    if (p1Done && p2Done) {
+      // Esperar a que terminen las explosiones antes de ir a gameover
+      if (!p1.exploding && !p2.exploding) {
+        gameState = 'gameover';
+      }
+    }
+  }
+
+  /* ── Movimiento lateral con aceleración y fricción ───────────────────── */
+  function updatePlayerMovement(player, leftKey, rightKey) {
+    if (!player.alive || player.exploding) return;
+
+    if (keys[leftKey])  player.vx -= LATERAL_ACCEL;
+    if (keys[rightKey]) player.vx += LATERAL_ACCEL;
+
+    player.vx *= LATERAL_FRICTION;
+    player.vx = Math.max(-MAX_LATERAL_SPEED, Math.min(MAX_LATERAL_SPEED, player.vx));
+    player.x += player.vx;
+
+    // Límites de carretera
+    const minX = ROAD_X + 4;
+    const maxX = ROAD_RIGHT - player.w - 4;
+    if (player.x < minX) { player.x = minX; player.vx = 0; }
+    if (player.x > maxX) { player.x = maxX; player.vx = 0; }
+  }
+
+  /* ── Spawn obstáculos en carriles aleatorios ─────────────────────────── */
+  function spawnObstacle() {
+    const lanesUsed = new Set();
+    const count = Math.random() < 0.55 ? 2 : Math.random() < 0.15 ? 3 : 1;
+    for (let i = 0; i < count; i++) {
+      let lane;
+      let tries = 0;
+      do { lane = Math.floor(Math.random() * LANE_COUNT); tries++; }
+      while (lanesUsed.has(lane) && tries < 8);
+      lanesUsed.add(lane);
+      obstacles.push({
+        x: ROAD_X + lane * LANE_W + (LANE_W - OBSTACLE_W) / 2,
+        y: -OBSTACLE_H - 10,
+        w: OBSTACLE_W, h: OBSTACLE_H,
+        lane,
+      });
+    }
+  }
+
+  /* ── Colisión jugador vs obstáculos (AABB) ───────────────────────────── */
+  function checkPlayerObstacleCollisions() {
+    for (const o of obstacles) {
+      if (p1.alive && !p1.exploding && aabb(p1, o)) triggerExplosion(p1, o);
+      if (mode === 2 && p2.alive && !p2.exploding && aabb(p2, o)) triggerExplosion(p2, o);
+    }
+  }
+
+  /* ── Colisión entre jugadores (AABB + empujón) ──────────────────────── */
+  function checkPlayerPlayerCollision() {
+    if (!aabb(p1, p2)) return;
+
+    /* ── AJUSTE DE FUERZA DE IMPACTO ────────────────────────────────────
+       COLLISION_PUSH: velocidad base del empujón (px/frame).
+         Valor recomendado: 4–10. Más alto = empujón más violento.
+       COLLISION_BOUNCE: fracción de la velocidad relativa que rebota.
+         0.0 = sin rebote adicional, 1.0 = rebote completamente elástico.
+    ─────────────────────────────────────────────────────────────────── */
+    const overlapX = (p1.x + p1.w / 2) - (p2.x + p2.w / 2);
+    const pushDir  = overlapX >= 0 ? 1 : -1;  // p1 va hacia la derecha si está a la derecha de p2
+
+    // Velocidad relativa horizontal en el eje de colisión
+    const relVx = p1.vx - p2.vx;
+
+    // Aplicar impulso: el que va hacia el otro recibe el mayor empujón
+    p1.vx += pushDir * COLLISION_PUSH + relVx * COLLISION_BOUNCE;
+    p2.vx -= pushDir * COLLISION_PUSH + relVx * COLLISION_BOUNCE;
+
+    // Separar coches para que no queden solapados
+    const sep = 2;
+    p1.x += pushDir * sep;
+    p2.x -= pushDir * sep;
+
+    // Partículas de chispa en el punto de contacto
+    const cx = (p1.x + p2.x) / 2 + PLAYER_W / 2;
+    const cy = (p1.y + p2.y) / 2 + PLAYER_H / 2;
+    spawnSparks(cx, cy, 12, '#ffffff');
+  }
+
+  /* ── Colisión AABB genérica ──────────────────────────────────────────── */
+  function aabb(a, b) {
+    return a.x < b.x + b.w &&
+           a.x + a.w > b.x &&
+           a.y < b.y + b.h &&
+           a.y + a.h > b.y;
+  }
+
+  /* ── Explosión ──────────────────────────────────────────────────────── */
+  function triggerExplosion(player, source) {
+    player.exploding    = true;
+    player.explodeTimer = 60;   // Frames de animación de explosión
+    const cx = player.x + player.w / 2;
+    const cy = player.y + player.h / 2;
+    spawnExplosion(cx, cy, player.color);
+    if (source) spawnExplosion(source.x + source.w / 2, source.y + source.h / 2, C.enemy);
+  }
+
+  function checkExplosionDone(player) {
+    if (!player.exploding) return;
+    player.explodeTimer--;
+    if (player.explodeTimer <= 0) {
+      player.exploding = false;
+      player.alive     = false;
+    }
+  }
+
+  /* ── PARTÍCULAS ─────────────────────────────────────────────────────── */
+  function spawnExplosion(cx, cy, mainColor) {
+    for (let i = 0; i < 40; i++) {
+      const angle  = Math.random() * Math.PI * 2;
+      const speed  = Math.random() * 6 + 1.5;
+      const color  = C.explosion[Math.floor(Math.random() * C.explosion.length)];
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1,
+        decay: Math.random() * 0.03 + 0.02,
+        r: Math.random() * 5 + 2,
+        color,
+      });
+    }
+  }
+
+  function spawnSparks(cx, cy, count, color) {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const spd   = Math.random() * 4 + 1;
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd,
+        life: 1, decay: 0.08, r: 2, color,
+      });
+    }
+  }
+
+  function updateParticles() {
+    for (const p of particles) {
+      p.x    += p.vx;
+      p.y    += p.vy;
+      p.vy   += 0.1;  // Gravedad ligera
+      p.life -= p.decay;
+    }
+    for (let i = particles.length - 1; i >= 0; i--) {
+      if (particles[i].life <= 0) particles.splice(i, 1);
+    }
+  }
+
+  /* ── TRAIL ──────────────────────────────────────────────────────────── */
+  function updateTrail(player) {
+    if (player.alive && !player.exploding) {
+      player.trail.unshift({ x: player.x, y: player.y });
+      if (player.trail.length > 10) player.trail.pop();
+    }
+  }
+
+  /* ================================================================
+     DRAW — Renderizado
+     ================================================================ */
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    if (gameState === 'menu')     { drawMenu(); return; }
+    if (gameState === 'gameover') { drawGameOver(); return; }
+
+    // PLAYING
+    drawBackground();
+    drawRoad();
+    drawParticles();
+    for (const o of obstacles) drawObstacle(o);
+    drawPlayerCar(p1);
+    if (mode === 2) drawPlayerCar(p2);
+    drawHUD();
+  }
+
+  /* ── Fondo oscuro con estrellas ──────────────────────────────────────── */
+  function drawBackground() {
+    ctx.fillStyle = C.bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // Márgenes laterales más oscuros
+    ctx.fillStyle = C.bgAlt;
+    ctx.fillRect(0, 0, ROAD_X, H);
+    ctx.fillRect(ROAD_RIGHT, 0, W - ROAD_RIGHT, H);
+
+    // Estrellas
+    for (const s of bgStars) {
+      ctx.globalAlpha = s.a * 0.5;
+      ctx.fillStyle = '#8888cc';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* ── Carretera con líneas de movimiento ─────────────────────────────── */
+  function drawRoad() {
+    // Asfalto
+    ctx.fillStyle = C.road;
+    ctx.fillRect(ROAD_X, 0, ROAD_W, H);
+
+    // Líneas divisoras de carril (en movimiento)
+    for (let lane = 1; lane < LANE_COUNT; lane++) {
+      const lx = ROAD_X + lane * LANE_W;
+      for (let y = -40 + roadOffset; y < H + 40; y += 40) {
+        ctx.fillStyle = C.laneLine;
+        ctx.fillRect(lx - 1, y, 2, 24);
+      }
+    }
+
+    // Bordes brillantes de la carretera
+    ctx.shadowColor  = C.roadEdge;
+    ctx.shadowBlur   = 18;
+    ctx.strokeStyle  = C.roadEdge;
+    ctx.lineWidth    = 3;
+
+    ctx.beginPath();
+    ctx.moveTo(ROAD_X, 0); ctx.lineTo(ROAD_X, H);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(ROAD_RIGHT, 0); ctx.lineTo(ROAD_RIGHT, H);
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+
+    // Líneas laterales internas de velocidad
+    ctx.strokeStyle = 'rgba(70,0,180,0.25)';
+    ctx.lineWidth   = 1;
+    for (let lane = 1; lane < LANE_COUNT; lane++) {
+      const lx = ROAD_X + lane * LANE_W;
+      ctx.beginPath();
+      ctx.moveTo(lx, 0); ctx.lineTo(lx, H);
+      ctx.stroke();
+    }
+  }
+
+  /* ── Coche ───────────────────────────────────────────────────────────── */
+  function drawPlayerCar(player) {
+    if (!player.alive) return;
+    if (player.exploding) {
+      // Parpadeo durante la explosión
+      if (Math.floor(player.explodeTimer / 4) % 2 === 0) return;
+    }
+
+    const { x, y, w, h, color, colorGlow, colorDark } = player;
+
+    // Trail
+    for (let i = player.trail.length - 1; i >= 0; i--) {
+      const t   = player.trail[i];
+      const alp = (1 - i / player.trail.length) * 0.22;
+      ctx.globalAlpha = alp;
+      ctx.fillStyle   = color;
+      ctx.fillRect(t.x, t.y, w, h);
+    }
+    ctx.globalAlpha = 1;
+
+    // Sombra/glow
+    ctx.shadowColor = colorGlow;
+    ctx.shadowBlur  = 20;
+
+    // Carrocería principal
+    ctx.fillStyle = colorDark;
+    ctx.fillRect(x, y, w, h);
+
+    // Franja central brillante
+    ctx.fillStyle = color;
+    ctx.fillRect(x + w * 0.25, y + 4, w * 0.5, h - 8);
+
+    // Faros delanteros
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + 4, y + 4, 8, 5);
+    ctx.fillRect(x + w - 12, y + 4, 8, 5);
+
+    // Luces traseras
+    ctx.fillStyle = '#ff4444';
+    ctx.fillRect(x + 4, y + h - 8, 8, 5);
+    ctx.fillRect(x + w - 12, y + h - 8, 8, 5);
+
+    // Número/letra del jugador
+    ctx.fillStyle   = '#ffffff';
+    ctx.font        = 'bold 13px Courier New';
+    ctx.textAlign   = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(player.id === 1 ? 'P1' : 'P2', x + w / 2, y + h / 2);
+
+    ctx.shadowBlur   = 0;
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  /* ── Obstáculo enemigo ──────────────────────────────────────────────── */
+  function drawObstacle(o) {
+    ctx.shadowColor = C.enemyGlow;
+    ctx.shadowBlur  = 14;
+
+    ctx.fillStyle = C.enemyDark;
+    ctx.fillRect(o.x, o.y, o.w, o.h);
+
+    ctx.fillStyle = C.enemy;
+    ctx.fillRect(o.x + o.w * 0.2, o.y + 4, o.w * 0.6, o.h - 8);
+
+    // Faros (apuntando hacia abajo = hacia el jugador)
+    ctx.fillStyle = '#ff8888';
+    ctx.fillRect(o.x + 4, o.y + o.h - 8, 8, 5);
+    ctx.fillRect(o.x + o.w - 12, o.y + o.h - 8, 8, 5);
+
+    ctx.shadowBlur = 0;
+  }
+
+  /* ── Partículas ─────────────────────────────────────────────────────── */
+  function drawParticles() {
+    for (const p of particles) {
+      ctx.globalAlpha  = Math.max(0, p.life);
+      ctx.shadowColor  = p.color;
+      ctx.shadowBlur   = 8;
+      ctx.fillStyle    = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur  = 0;
+  }
+
+  /* ── HUD (puntuaciones) ──────────────────────────────────────────────── */
+  function drawHUD() {
+    // Fondo semitransparente
+    ctx.fillStyle = 'rgba(5,5,16,0.8)';
+    ctx.fillRect(0, 0, W, 44);
+
+    // P1
+    ctx.shadowColor = C.p1;
+    ctx.shadowBlur  = 10;
+    ctx.fillStyle   = p1.alive ? C.p1 : C.uiDim;
+    ctx.font        = 'bold 15px Courier New';
+    ctx.textAlign   = 'left';
+    ctx.fillText(`P1: ${p1.score}pts`, 16, 27);
+
+    // Velocidad central
+    ctx.fillStyle  = C.uiDim;
+    ctx.shadowBlur = 0;
+    ctx.font       = '13px Courier New';
+    ctx.textAlign  = 'center';
+    ctx.fillText(`VEL ${roadSpeed.toFixed(1)}x`, W / 2, 27);
+
+    // P2 (solo modo 2)
+    if (mode === 2) {
+      ctx.shadowColor = C.p2;
+      ctx.shadowBlur  = 10;
+      ctx.fillStyle   = p2.alive ? C.p2 : C.uiDim;
+      ctx.font        = 'bold 15px Courier New';
+      ctx.textAlign   = 'right';
+      ctx.fillText(`P2: ${p2.score}pts`, W - 16, 27);
+    }
+
+    ctx.shadowBlur = 0;
+    ctx.textAlign  = 'left';
+  }
+
+  /* ── MENÚ DE INICIO ──────────────────────────────────────────────────── */
+  function drawMenu() {
+    // Fondo
+    ctx.fillStyle = C.bg;
+    ctx.fillRect(0, 0, W, H);
+    drawRoadPreview();
+
+    // Título
+    ctx.textAlign  = 'center';
+    ctx.shadowColor = C.titleGlow;
+    ctx.shadowBlur  = 40;
+    ctx.fillStyle   = C.title;
+    ctx.font        = 'bold 54px Courier New';
+    ctx.fillText('NEON', W / 2, 130);
+
+    ctx.shadowColor = '#00e5ff';
+    ctx.shadowBlur  = 30;
+    ctx.fillStyle   = '#00e5ff';
+    ctx.font        = 'bold 54px Courier New';
+    ctx.fillText('LANE SPLITTER', W / 2, 192);
+
+    ctx.shadowBlur  = 0;
+
+    // Subtítulo
+    ctx.fillStyle = C.uiDim;
+    ctx.font      = '16px Courier New';
+    ctx.fillText('ARCADE RACING · VISTA AÉREA', W / 2, 230);
+
+    // Línea separadora
+    const pulse = 0.7 + 0.3 * Math.sin(Date.now() / 400);
+    ctx.strokeStyle = `rgba(112,0,255,${pulse})`;
+    ctx.lineWidth   = 2;
+    ctx.shadowColor = C.roadEdge;
+    ctx.shadowBlur  = 12;
+    ctx.beginPath();
+    ctx.moveTo(W / 2 - 200, 252); ctx.lineTo(W / 2 + 200, 252);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Opciones de modo
+    drawMenuOption('[ 1 ]  1 JUGADOR', W / 2, 316, C.p1, C.p1glow);
+    drawMenuOption('[ 2 ]  2 JUGADORES', W / 2, 384, C.p2, C.p2glow);
+
+    // Controles
+    ctx.fillStyle = C.uiDim;
+    ctx.font      = '13px Courier New';
+    ctx.fillText('P1: A / D   —   P2: ← / →', W / 2, 460);
+    ctx.fillText('Esquiva obstáculos · Empuja al rival · Sobrevive más', W / 2, 485);
+
+    ctx.textAlign = 'left';
+  }
+
+  function drawMenuOption(text, x, y, color, glow) {
+    const pulse = 0.85 + 0.15 * Math.sin(Date.now() / 500);
+    ctx.shadowColor  = glow;
+    ctx.shadowBlur   = 20 * pulse;
+    ctx.fillStyle    = color;
+    ctx.font         = `bold 26px Courier New`;
+    ctx.textAlign    = 'center';
+    ctx.globalAlpha  = pulse;
+    ctx.fillText(text, x, y);
+    ctx.globalAlpha  = 1;
+    ctx.shadowBlur   = 0;
+  }
+
+  function drawRoadPreview() {
+    // Mini carretera decorativa en el menú
+    ctx.fillStyle = 'rgba(13,13,32,0.7)';
+    ctx.fillRect(ROAD_X, 0, ROAD_W, H);
+    ctx.strokeStyle = 'rgba(112,0,255,0.3)';
+    ctx.lineWidth   = 2;
+    ctx.beginPath(); ctx.moveTo(ROAD_X, 0); ctx.lineTo(ROAD_X, H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ROAD_RIGHT, 0); ctx.lineTo(ROAD_RIGHT, H); ctx.stroke();
+  }
+
+  /* ── PANTALLA GAME OVER ──────────────────────────────────────────────── */
+  function drawGameOver() {
+    // Fondo
+    ctx.fillStyle = 'rgba(5,5,16,0.95)';
+    ctx.fillRect(0, 0, W, H);
+    drawParticles();
+
+    ctx.textAlign = 'center';
+
+    // Determinar ganador
+    let winMsg  = '';
+    let winColor = C.gold;
+    if (mode === 1) {
+      winMsg   = 'FIN DE LA CARRERA';
+      winColor = C.p1;
+    } else if (p1.score > p2.score) {
+      winMsg   = '¡EL JUGADOR 1 HA GANADO LA CARRERA!';
+      winColor = C.p1;
+    } else if (p2.score > p1.score) {
+      winMsg   = '¡EL JUGADOR 2 HA GANADO LA CARRERA!';
+      winColor = C.p2;
+    } else {
+      winMsg   = '¡EMPATE PERFECTO!';
+      winColor = C.gold;
+    }
+
+    // Mensaje de victoria
+    ctx.shadowColor = winColor;
+    ctx.shadowBlur  = 36;
+    ctx.fillStyle   = winColor;
+    ctx.font        = 'bold 30px Courier New';
+    wrapText(ctx, winMsg, W / 2, 130, 680, 40);
+
+    // Separador
+    ctx.strokeStyle = winColor;
+    ctx.lineWidth   = 2;
+    ctx.shadowBlur  = 12;
+    ctx.beginPath();
+    ctx.moveTo(W / 2 - 240, 188); ctx.lineTo(W / 2 + 240, 188);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Puntuaciones
+    ctx.shadowColor = C.p1;
+    ctx.shadowBlur  = 16;
+    ctx.fillStyle   = C.p1;
+    ctx.font        = 'bold 22px Courier New';
+    ctx.fillText(`JUGADOR 1 — ${p1.score} PTS`, W / 2, 248);
+
+    if (mode === 2) {
+      ctx.shadowColor = C.p2;
+      ctx.shadowBlur  = 16;
+      ctx.fillStyle   = C.p2;
+      ctx.fillText(`JUGADOR 2 — ${p2.score} PTS`, W / 2, 292);
+    }
+
+    ctx.shadowBlur = 0;
+
+    // Estadísticas extra
+    ctx.fillStyle = C.uiDim;
+    ctx.font      = '14px Courier New';
+    ctx.fillText(`Velocidad máxima alcanzada: ${roadSpeed.toFixed(1)}x`, W / 2, 360);
+
+    // Botón reiniciar
+    const pulse = 0.7 + 0.3 * Math.sin(Date.now() / 400);
+    ctx.shadowColor = 'rgba(200,200,255,0.5)';
+    ctx.shadowBlur  = 16 * pulse;
+    ctx.fillStyle   = `rgba(200,200,255,${0.8 * pulse})`;
+    ctx.font        = `bold 20px Courier New`;
+    ctx.fillText('[ ENTER ]  VOLVER AL MENÚ', W / 2, 444);
+
+    ctx.font      = '13px Courier New';
+    ctx.fillStyle = C.uiDim;
+    ctx.shadowBlur = 0;
+    ctx.fillText('o pulsa 1 / 2 para jugar de nuevo directamente', W / 2, 478);
+
+    ctx.textAlign = 'left';
+  }
+
+  /* ── Texto multilínea ────────────────────────────────────────────────── */
+  function wrapText(context, text, x, y, maxWidth, lineHeight) {
+    const words = text.split(' ');
+    let line = '';
+    for (let n = 0; n < words.length; n++) {
+      const test = line + words[n] + ' ';
+      if (context.measureText(test).width > maxWidth && n > 0) {
+        context.fillText(line, x, y);
+        line = words[n] + ' ';
+        y += lineHeight;
+      } else { line = test; }
+    }
+    context.fillText(line, x, y);
+  }
+
+  /* ================================================================
+     INPUT
+     ================================================================ */
+  document.addEventListener('keydown', e => {
+    const code = e.code;
+    if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(code)) {
+      e.preventDefault();
+    }
+    keys[code] = true;
+
+    if (gameState === 'menu') {
+      if (code === 'Digit1') init(1);
+      if (code === 'Digit2') init(2);
+    }
+    if (gameState === 'gameover') {
+      if (code === 'Enter')  gameState = 'menu';
+      if (code === 'Digit1') init(1);
+      if (code === 'Digit2') init(2);
+    }
+  });
+
+  document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+  /* ================================================================
+     GAME LOOP
+     ================================================================ */
+  function loop(timestamp) {
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.05); // Delta en segundos
+    lastTime = timestamp;
+
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  /* ── ARRANQUE ────────────────────────────────────────────────────────── */
+  generateStars();
+  // Bucle de animación del menú antes de iniciar
+  requestAnimationFrame(function menuLoop(ts) {
+    lastTime = ts;
+    draw();
+    if (gameState === 'menu') requestAnimationFrame(menuLoop);
+    else requestAnimationFrame(loop);
+  });
+
+  // Enfocar para capturar teclado
+  canvas.setAttribute('tabindex', '0');
+  window.addEventListener('load', () => canvas.focus());
+  document.addEventListener('click', () => canvas.focus());
+
+})();
+</script>
+</body>
+</html>
