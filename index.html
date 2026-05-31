@@ -22,6 +22,8 @@
     image-rendering: pixelated;
   }
 </style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9932172783212422"
+     crossorigin="anonymous"></script>
 </head>
 <body>
 <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -72,6 +74,21 @@
   let lastTime = 0, deltaAcc = 0;
   let particles, obstacles, keys = {}, bgStars = [];
   let p1, p2;
+
+  /* ── RÉCORDS (guardados en cookies) ──────────────────────────────────── */
+  function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return match ? parseInt(decodeURIComponent(match[1]), 10) || 0 : 0;
+  }
+  function setCookie(name, value) {
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 5); // 5 años
+    document.cookie = name + '=' + encodeURIComponent(value) +
+      '; expires=' + expires.toUTCString() + '; path=/';
+  }
+
+  let record1P = getCookie('nls_record_1p');
+  let record2P = getCookie('nls_record_2p'); // mejor puntuación individual en modo 2J
 
   const keyJustPressed = {};
   const lastLaneMove   = { 1: 0, 2: 0 };
@@ -193,13 +210,17 @@
     checkExplosionDone(p1, dt);
     checkExplosionDone(p2, dt);
 
-    // Game over
+    // Game over — guardar récord
     if (mode === 2 && (!p1.alive || !p2.alive) && !p1.exploding && !p2.exploding) {
+      saveRecords();
       gameState = 'gameover'; return;
     }
     const p1Done = !p1.alive || p1.exploding;
     const p2Done = (mode === 1) || !p2.alive || p2.exploding;
-    if (p1Done && p2Done && !p1.exploding && !p2.exploding) gameState = 'gameover';
+    if (p1Done && p2Done && !p1.exploding && !p2.exploding) {
+      saveRecords();
+      gameState = 'gameover';
+    }
   }
 
   /* ── Captura input: encola direcciones, una por pulsación ───────────── */
@@ -289,6 +310,15 @@
     if (!player.exploding) return;
     player.explodeTimer -= dt;
     if (player.explodeTimer <= 0) { player.exploding = false; player.alive = false; }
+  }
+
+  function saveRecords() {
+    if (mode === 1) {
+      if (p1.score > record1P) { record1P = p1.score; setCookie('nls_record_1p', record1P); }
+    } else {
+      const best = Math.max(p1.score, p2.score);
+      if (best > record2P) { record2P = best; setCookie('nls_record_2p', record2P); }
+    }
   }
 
   /* ── Partículas (velocidades en px/seg, decay en vida/seg) ───────────── */
@@ -476,6 +506,34 @@
     ctx.fillStyle = C.uiDim; ctx.font = '13px Courier New';
     ctx.fillText('P1: A / D   —   P2: ← / →', W/2, 460);
     ctx.fillText('Esquiva obstáculos · Sobrevive más tiempo', W/2, 485);
+
+    // Récords
+    ctx.font = '13px Courier New';
+    if (record1P > 0 || record2P > 0) {
+      ctx.fillStyle = C.uiDim;
+      ctx.fillText('— RÉCORDS —', W/2, 524);
+      if (record1P > 0) {
+        ctx.shadowColor = C.p1; ctx.shadowBlur = 8;
+        ctx.fillStyle = C.p1;
+        ctx.fillText(`1 JUGADOR: ${record1P} pts`, W/2, 545);
+        ctx.shadowBlur = 0;
+      }
+      if (record2P > 0) {
+        ctx.shadowColor = C.p2; ctx.shadowBlur = 8;
+        ctx.fillStyle = C.p2;
+        ctx.fillText(`2 JUGADORES: ${record2P} pts`, W/2, 566);
+        ctx.shadowBlur = 0;
+      }
+    } else {
+      ctx.fillStyle = C.uiDim;
+      ctx.fillText('Aún no hay récords — ¡sé el primero!', W/2, 545);
+    }
+
+    // Enlace política de privacidad
+    ctx.fillStyle = '#3a3a6a';
+    ctx.font = '11px Courier New';
+    ctx.fillText('Política de Privacidad', W/2, 590);
+
     ctx.textAlign = 'left';
   }
 
@@ -506,11 +564,13 @@
 
     ctx.shadowColor = C.p1; ctx.shadowBlur = 16;
     ctx.fillStyle = C.p1; ctx.font = 'bold 22px Courier New';
-    ctx.fillText(`JUGADOR 1 — ${p1.score} PTS`, W/2, 248);
+    const p1New = mode === 1 ? p1.score >= record1P : p1.score >= record2P;
+    ctx.fillText(`JUGADOR 1 — ${p1.score} PTS${p1New && p1.score > 0 ? '  ★ RÉCORD' : ''}`, W/2, 248);
     if (mode === 2) {
       ctx.shadowColor = C.p2; ctx.shadowBlur = 16;
       ctx.fillStyle = C.p2;
-      ctx.fillText(`JUGADOR 2 — ${p2.score} PTS`, W/2, 292);
+      const p2New = p2.score >= record2P;
+      ctx.fillText(`JUGADOR 2 — ${p2.score} PTS${p2New && p2.score > 0 ? '  ★ RÉCORD' : ''}`, W/2, 292);
     }
     ctx.shadowBlur = 0;
 
@@ -582,6 +642,20 @@
   canvas.setAttribute('tabindex','0');
   window.addEventListener('load', () => canvas.focus());
   document.addEventListener('click', () => canvas.focus());
+
+  // Enlace "Política de Privacidad" en el menú
+  canvas.addEventListener('click', e => {
+    if (gameState !== 'menu') return;
+    const rect  = canvas.getBoundingClientRect();
+    const scaleX = W / rect.width;
+    const scaleY = H / rect.height;
+    const cx = (e.clientX - rect.left) * scaleX;
+    const cy = (e.clientY - rect.top)  * scaleY;
+    // Zona del texto (centrado en W/2, y=590, ~160px ancho, ~14px alto)
+    if (cx > W/2 - 80 && cx < W/2 + 80 && cy > 578 && cy < 596) {
+      window.open('privacy.html', '_blank');
+    }
+  });
 
 })();
 </script>
