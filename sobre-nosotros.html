@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sobre el Proyecto — Neon Lane Splitter</title>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-W3WXZLTX');</script>
+<!-- End Google Tag Manager -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9932172783212422" crossorigin="anonymous"></script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KVEMMXGNTC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KVEMMXGNTC');
+</script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #050510; color: #c0c0e0; font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.7; padding: 40px 20px; }
+  .container { max-width: 720px; margin: 0 auto; }
+  h1 { color: #cc88ff; font-size: 2rem; margin-bottom: 8px; text-shadow: 0 0 20px rgba(200,100,255,0.5); }
+  .subtitle { color: #7070aa; font-size: 0.9rem; margin-bottom: 40px; }
+  h2 { color: #00c8ff; font-size: 1.1rem; margin: 32px 0 10px; text-shadow: 0 0 10px rgba(0,200,255,0.3); }
+  p { margin-bottom: 14px; }
+  a { color: #a78bfa; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .back { display: inline-block; margin-bottom: 32px; color: #7070aa; font-size: 0.9rem; border: 1px solid #2a1a4a; padding: 6px 16px; border-radius: 4px; }
+  .back:hover { color: #cc88ff; text-decoration: none; }
+  .highlight {
+    background: #0d0d20;
+    border: 1px solid #2a1a4a;
+    border-left: 3px solid #cc88ff;
+    border-radius: 0 8px 8px 0;
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-style: italic;
+    color: #a0a0cc;
+  }
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .tech-item {
+    background: #0d0d20;
+    border: 1px solid #1a1a3a;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 0.9rem;
+  }
+  .tech-item span { color: #7c3aed; margin-right: 8px; }
+  .cta {
+    display: inline-block;
+    margin-top: 8px;
+    background: #1a0a3a;
+    border: 1px solid #7c3aed;
+    color: #cc88ff;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-weight: bold;
+    text-shadow: 0 0 8px rgba(200,100,255,0.4);
+    transition: background 0.2s;
+  }
+  .cta:hover { background: #2a1a5a; text-decoration: none; }
+  hr { border: none; border-top: 1px solid #1a1a3a; margin: 40px 0; }
+  .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+  .footer-links a { color: #7070aa; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W3WXZLTX" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<div class="container">
+  <a class="back" href="index.html">← Volver al juego</a>
+
+  <h1>Sobre el Proyecto</h1>
+  <p class="subtitle">Quién está detrás de Neon Lane Splitter y por qué lo creamos</p>
+
+  <div class="highlight">
+    "Quería demostrar que se puede crear un videojuego arcade completo, con físicas, puntuación, multijugador y estética cuidada, usando únicamente HTML5, CSS y JavaScript puro — sin ninguna librería externa."
+  </div>
+
+  <h2>El origen</h2>
+  <p>Neon Lane Splitter nació como un experimento personal: ¿hasta dónde se puede llevar un juego de navegador usando solo las APIs nativas del navegador? Sin Phaser, sin Unity, sin frameworks. Solo el Canvas de HTML5 y JavaScript vanilla.</p>
+  <p>Lo que empezó como una prueba de concepto de un fin de semana acabó convirtiéndose en un juego arcade completo con modo para dos jugadores, dificultad progresiva, récords guardados y una estética cyberpunk/neón que me gustó desde el primer boceto.</p>
+
+  <h2>El juego</h2>
+  <p><strong>Neon Lane Splitter</strong> es un arcade de carreras infinito con vista aérea. El objetivo es simple: esquiva los coches enemigos el mayor tiempo posible. En modo 2 jugadores, puedes competir en el mismo teclado contra un amigo para ver quién sobrevive más.</p>
+  <p>El juego está optimizado para que la velocidad sea idéntica en cualquier ordenador — no importa si va a 30 o 144 fps, gracias a un sistema de físicas basado en tiempo real (delta time).</p>
+
+  <h2>Tecnología utilizada</h2>
+  <div class="tech-grid">
+    <div class="tech-item"><span>▸</span>HTML5 Canvas API</div>
+    <div class="tech-item"><span>▸</span>JavaScript ES6+</div>
+    <div class="tech-item"><span>▸</span>CSS3</div>
+    <div class="tech-item"><span>▸</span>Google Analytics</div>
+    <div class="tech-item"><span>▸</span>Google AdSense</div>
+    <div class="tech-item"><span>▸</span>GitHub Pages</div>
+  </div>
+  <p>Sin dependencias externas de juego. Todo el motor de físicas, la generación procedural de obstáculos, las partículas y la interfaz están escritos desde cero.</p>
+
+  <h2>¿Hay más proyectos?</h2>
+  <p>Este es el primer juego publicado, pero hay más ideas en camino. Si quieres estar al tanto de novedades o tienes sugerencias para mejorar el juego, escríbenos.</p>
+
+  <a class="cta" href="index.html">▶ Jugar ahora</a>
+
+  <hr>
+  <div class="footer-links">
+    <a href="contacto.html">Contacto</a>
+    <a href="privacy.html">Política de Privacidad</a>
+    <a href="legal.html">Aviso Legal</a>
+  </div>
+</div>
+</body>
+</html>
