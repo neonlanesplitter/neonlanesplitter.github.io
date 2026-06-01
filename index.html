@@ -548,17 +548,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       ctx.fillText('Aún no hay récords — ¡sé el primero!', W/2, 545);
     }
 
-    // Footer de navegación
+    // Footer de navegación (4 enlaces, zonas: <160 | <500 | <620 | resto)
     ctx.font = '11px Courier New';
     ctx.fillStyle = '#3a3a6a';
     ctx.textAlign = 'left';
     ctx.fillText('Aviso Legal', 16, 590);
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#3a3a6a';
-    ctx.fillText('Política de Privacidad', W/2, 590);
-    ctx.fillStyle = '#3a3a6a';
+    ctx.fillText('Política de Privacidad', 330, 590);
+    ctx.fillText('Sobre el Proyecto', 560, 590);
     ctx.textAlign = 'right';
-    ctx.fillText('Sobre el Proyecto  |  Contacto', W - 16, 590);
+    ctx.fillText('Contacto', W - 16, 590);
+    ctx.textAlign = 'left';
 
     ctx.textAlign = 'left';
   }
@@ -669,7 +669,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   window.addEventListener('load', () => canvas.focus());
   document.addEventListener('click', () => canvas.focus());
 
-  // Enlace "Política de Privacidad" en el menú
+  // Enlaces del footer en el menú
   canvas.addEventListener('click', e => {
     if (gameState !== 'menu') return;
     const rect  = canvas.getBoundingClientRect();
@@ -677,21 +677,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const scaleY = H / rect.height;
     const cx = (e.clientX - rect.left) * scaleX;
     const cy = (e.clientY - rect.top)  * scaleY;
-    if (cx > W/2 - 80 && cx < W/2 + 80 && cy > 578 && cy < 596) {
-      window.open('privacy.html', '_blank');
-    }
-    // Enlace "Aviso Legal"
-    if (cx > 10 && cx < 120 && cy > 578 && cy < 596) {
-      window.open('legal.html', '_blank');
-    }
-    // Enlace "Sobre el proyecto"
-    if (cx > W - 190 && cx < W - 10 && cy > 578 && cy < 596) {
-      window.open('sobre-nosotros.html', '_blank');
-    }
-    // Enlace "Contacto"
-    if (cx > W/2 + 90 && cx < W/2 + 200 && cy > 578 && cy < 596) {
-      window.open('contacto.html', '_blank');
-    }
+    if (cy < 578 || cy > 596) return; // fuera de la fila de enlaces
+
+    if      (cx < 160)              window.open('legal.html',           '_blank');
+    else if (cx < W/2 + 100)        window.open('privacy.html',         '_blank');
+    else if (cx < W/2 + 220)        window.open('sobre-nosotros.html',  '_blank');
+    else                            window.open('contacto.html',         '_blank');
   });
 
 })();
