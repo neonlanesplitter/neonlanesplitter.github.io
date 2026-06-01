@@ -548,10 +548,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       ctx.fillText('Aún no hay récords — ¡sé el primero!', W/2, 545);
     }
 
-    // Enlace política de privacidad
-    ctx.fillStyle = '#3a3a6a';
+    // Footer de navegación
     ctx.font = '11px Courier New';
+    ctx.fillStyle = '#3a3a6a';
+    ctx.textAlign = 'left';
+    ctx.fillText('Aviso Legal', 16, 590);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#3a3a6a';
     ctx.fillText('Política de Privacidad', W/2, 590);
+    ctx.fillStyle = '#3a3a6a';
+    ctx.textAlign = 'right';
+    ctx.fillText('Sobre el Proyecto  |  Contacto', W - 16, 590);
 
     ctx.textAlign = 'left';
   }
@@ -670,9 +677,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const scaleY = H / rect.height;
     const cx = (e.clientX - rect.left) * scaleX;
     const cy = (e.clientY - rect.top)  * scaleY;
-    // Zona del texto (centrado en W/2, y=590, ~160px ancho, ~14px alto)
     if (cx > W/2 - 80 && cx < W/2 + 80 && cy > 578 && cy < 596) {
       window.open('privacy.html', '_blank');
+    }
+    // Enlace "Aviso Legal"
+    if (cx > 10 && cx < 120 && cy > 578 && cy < 596) {
+      window.open('legal.html', '_blank');
+    }
+    // Enlace "Sobre el proyecto"
+    if (cx > W - 190 && cx < W - 10 && cy > 578 && cy < 596) {
+      window.open('sobre-nosotros.html', '_blank');
+    }
+    // Enlace "Contacto"
+    if (cx > W/2 + 90 && cx < W/2 + 200 && cy > 578 && cy < 596) {
+      window.open('contacto.html', '_blank');
     }
   });
 
