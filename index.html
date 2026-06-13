@@ -2,13 +2,49 @@
 <html lang="es">
 <head>
 
-<link rel="icon" type="image/jpg" href="ico.jpg" sizes="144x144">
-
-    <!-- Para dispositivos móviles (iOS y Android) que guardan la web en inicio -->
+<link rel="icon" type="image/jpeg" href="ico.jpg" sizes="144x144">
 <link rel="apple-touch-icon" sizes="144x144" href="ico.jpg">
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Neon Lane Splitter</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Neon Lane Splitter — Arcade de carreras para navegador</title>
+<meta name="description" content="Neon Lane Splitter — Arcade de carreras infinito con vista aérea y estética cyberpunk. Juega gratis en el navegador, sin instalar nada. Modo 1 y 2 jugadores.">
+<!-- Open Graph / redes sociales -->
+<meta property="og:type"        content="website">
+<meta property="og:site_name"   content="Neon Lane Splitter">
+<meta property="og:title"       content="Neon Lane Splitter — Arcade de carreras para navegador">
+<meta property="og:description" content="Arcade de carreras infinito con vista aérea y estética cyberpunk. Juega gratis en el navegador, modo 1 y 2 jugadores.">
+<meta property="og:image"       content="https://neonlanesplitter.github.io/ico.jpg">
+<meta property="og:url"         content="https://neonlanesplitter.github.io/">
+<!-- Twitter Card -->
+<meta name="twitter:card"        content="summary">
+<meta name="twitter:site"        content="Neon Lane Splitter">
+<meta name="twitter:title"       content="Neon Lane Splitter — Arcade de carreras para navegador">
+<meta name="twitter:description" content="Arcade de carreras infinito con vista aérea y estética cyberpunk. Juega gratis en el navegador, modo 1 y 2 jugadores.">
+<meta name="twitter:image"       content="https://neonlanesplitter.github.io/ico.jpg">
+<!-- JSON-LD: nombre del sitio y logo para Google Search -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "name": "Neon Lane Splitter",
+      "url": "https://neonlanesplitter.github.io/"
+    },
+    {
+      "@type": "Organization",
+      "name": "Neon Lane Splitter",
+      "url": "https://neonlanesplitter.github.io/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://neonlanesplitter.github.io/ico.jpg",
+        "width": 144,
+        "height": 144
+      }
+    }
+  ]
+}
+</script>
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -27,20 +63,359 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 </script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
+
   body {
     background: #050510;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+    color: #c0c0e0;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    line-height: 1.7;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    background: #08081a;
+    border-bottom: 2px solid #1a0a3a;
+    padding: 18px 32px;
+    box-shadow: 0 2px 30px rgba(120,0,255,0.25);
+  }
+  .site-title {
     font-family: 'Courier New', monospace;
-    overflow: hidden;
+    font-size: 1.7rem;
+    letter-spacing: 3px;
+    color: #cc88ff;
+    text-shadow: 0 0 24px rgba(200,100,255,0.6);
+  }
+  .site-title span { color: #00e5ff; text-shadow: 0 0 20px rgba(0,229,255,0.6); }
+  .site-subtitle {
+    color: #4a4a7a;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    margin-top: 2px;
+  }
+
+  /* ── LAYOUT ── */
+  .page-wrapper {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+  }
+  .main-col { flex: 1; min-width: 0; }
+  .sidebar  { width: 210px; flex-shrink: 0; padding-top: 28px; }
+
+  /* ── CANVAS ── */
+  .game-section { padding: 28px 0 0; }
+  .canvas-wrap {
+    width: 100%;
+    max-width: 800px;
+    border: 2px solid #1a0a3a;
+    box-shadow: 0 0 40px rgba(120,0,255,0.5), 0 0 80px rgba(120,0,255,0.15);
+    background: #050510;
+    display: block;
   }
   #gameCanvas {
     display: block;
-    border: 2px solid #1a0a3a;
-    box-shadow: 0 0 40px rgba(120,0,255,0.5), 0 0 80px rgba(120,0,255,0.2);
+    width: 100%;
+    height: auto;
     image-rendering: pixelated;
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── MOBILE HINT ── */
+  .mobile-hint {
+    display: none;
+    text-align: center;
+    color: #4a4a7a;
+    font-size: 0.75rem;
+    font-family: 'Courier New', monospace;
+    padding: 8px 12px;
+    background: #07071a;
+    border: 1px solid #12122a;
+    border-top: none;
+    max-width: 800px;
+  }
+  @media (hover: none) and (pointer: coarse), (max-width: 640px) {
+    .mobile-hint { display: block; }
+  }
+
+  /* ── MOBILE CONTROLS ── */
+  .mobile-controls {
+    display: none;
+    background: #08081a;
+    border: 2px solid #1a0a3a;
+    border-top: none;
+    padding: 14px 16px 16px;
+    max-width: 800px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    box-shadow: 0 4px 20px rgba(120,0,255,0.2);
+  }
+  @media (hover: none) and (pointer: coarse), (max-width: 640px) {
+    .mobile-controls { display: flex; }
+  }
+
+  .ctrl-half {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .ctrl-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .ctrl-buttons { display: flex; gap: 10px; }
+
+  .ctrl-player-label {
+    font-family: 'Courier New', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    font-weight: bold;
+    opacity: 0.9;
+  }
+  .ctrl-center-label {
+    font-family: 'Courier New', monospace;
+    font-size: 0.6rem;
+    color: #4a4a7a;
+    letter-spacing: 1px;
+  }
+
+  .ctrl-btn {
+    width: 62px;
+    height: 56px;
+    background: #0a0a1e;
+    border-radius: 8px;
+    color: #cc88ff;
+    font-size: 1.3rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.08s, border-color 0.08s, transform 0.05s;
+    border: 1px solid #2a1a4a;
+  }
+  .ctrl-btn:active { transform: scale(0.93); }
+
+  .ctrl-btn.ctrl-p1 { color: #00c8ff; border-color: #003a55; }
+  .ctrl-btn.ctrl-p1.pressed,
+  .ctrl-btn.ctrl-p1:active { background: #001e33; border-color: #00c8ff;
+    box-shadow: 0 0 12px rgba(0,200,255,0.4); }
+
+  .ctrl-btn.ctrl-p2 { color: #ff2d96; border-color: #55002a; }
+  .ctrl-btn.ctrl-p2.pressed,
+  .ctrl-btn.ctrl-p2:active { background: #330016; border-color: #ff2d96;
+    box-shadow: 0 0 12px rgba(255,45,150,0.4); }
+
+  .ctrl-btn.ctrl-esc { color: #cc88ff; width: 52px; height: 52px;
+    font-size: 1.1rem; border-color: #3a1a5a; }
+  .ctrl-btn.ctrl-esc:active { background: #1a0a3a; border-color: #cc88ff;
+    box-shadow: 0 0 10px rgba(200,100,255,0.4); }
+
+  .ctrl-right-dim { opacity: 0.35; pointer-events: none; transition: opacity 0.3s; }
+
+  /* ── SECTIONS ── */
+  .info-section {
+    padding: 28px 0;
+    border-top: 1px solid #12122a;
+    max-width: 800px;
+  }
+  .info-section p { margin-bottom: 12px; font-size: 0.95rem; }
+  .info-section a { color: #a78bfa; text-decoration: none; }
+  .info-section a:hover { text-decoration: underline; }
+
+  h2.sec {
+    color: #00c8ff;
+    font-size: 1.05rem;
+    margin-bottom: 14px;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 10px rgba(0,200,255,0.3);
+  }
+  h2.sec + .faq-item { margin-top: 4px; }
+
+  .highlight {
+    background: #0d0d20;
+    border-left: 3px solid #cc88ff;
+    border-radius: 0 6px 6px 0;
+    padding: 16px 20px;
+    margin: 0 0 24px;
+    font-style: italic;
+    color: #a0a0cc;
+    font-size: 0.9rem;
+  }
+
+  /* ── FAQ ── */
+  .faq-item { margin-bottom: 22px; }
+  .faq-q {
+    font-weight: bold;
+    color: #e0e0ff;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+  }
+  .faq-a {
+    color: #9090bb;
+    font-size: 0.88rem;
+    padding-left: 14px;
+    border-left: 2px solid #1e1e40;
+    line-height: 1.6;
+  }
+  .faq-a a { color: #a78bfa; }
+
+  /* ── TECH ── */
+  .tech-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0 14px;
+  }
+  .tech-item {
+    background: #0d0d20;
+    border: 1px solid #1a1a3a;
+    border-radius: 4px;
+    padding: 5px 12px;
+    font-size: 0.82rem;
+    color: #a0a0cc;
+  }
+  .tech-item span { color: #7c3aed; margin-right: 5px; }
+
+  /* ── CONTACT ── */
+  .contact-box {
+    background: #0d0d20;
+    border: 1px solid #1a1a4a;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    text-align: center;
+  }
+  .contact-box .label { color: #7070aa; font-size: 0.8rem; margin-bottom: 6px; }
+  .contact-box .address {
+    color: #00c8ff;
+    font-size: 1.15rem;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0,200,255,0.4);
+    text-decoration: none;
+  }
+  .contact-box .address:hover { color: #a78bfa; }
+  .response-note {
+    background: #0a0a1a;
+    border-left: 3px solid #7c3aed;
+    padding: 10px 16px;
+    border-radius: 0 4px 4px 0;
+    color: #7070aa;
+    font-size: 0.85rem;
+    margin-top: 12px;
+  }
+  .topic-list { list-style: none; padding: 0; margin: 8px 0; }
+  .topic-list li { padding: 4px 0; font-size: 0.9rem; }
+  .topic-list li::before { content: '▸ '; color: #7c3aed; }
+
+  /* ── SIDEBAR ── */
+  .sb-block {
+    background: #080818;
+    border: 1px solid #1a1a3a;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .sb-title {
+    color: #00c8ff;
+    font-family: 'Courier New', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 1px;
+    padding: 11px 14px;
+    border-bottom: 1px solid #1a1a3a;
+    text-align: center;
+  }
+  .sb-block a {
+    display: block;
+    padding: 9px 14px;
+    color: #6060aa;
+    text-decoration: none;
+    border-bottom: 1px solid #0d0d1a;
+    font-size: 0.82rem;
+    transition: color 0.15s, background 0.15s;
+  }
+  .sb-block a:last-child { border-bottom: none; }
+  .sb-block a:hover { color: #cc88ff; background: #0d0d20; }
+  .sb-block a::before { content: '▸ '; color: #5a2aed; }
+  .sb-compat {
+    background: #0a0a1e;
+    border: 1px solid #1a1a3a;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  .sb-compat-title {
+    color: #7070aa;
+    font-family: 'Courier New', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .sb-compat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 0.8rem;
+    color: #a0a0cc;
+  }
+  .sb-compat-item .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-green { background: #00ff88; box-shadow: 0 0 6px rgba(0,255,136,0.6); }
+  .dot-yellow { background: #ffaa00; box-shadow: 0 0 6px rgba(255,170,0,0.5); }
+
+  /* ── FOOTER ── */
+  .site-footer {
+    background: #07071a;
+    border-top: 1px solid #12122a;
+    padding: 22px 24px;
+    margin-top: 48px;
+    text-align: center;
+  }
+  .site-footer .copy {
+    color: #2a2a5a;
+    font-size: 0.75rem;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .footer-nav a {
+    color: #5a5a8a;
+    text-decoration: none;
+    font-size: 0.78rem;
+    margin: 0 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .footer-nav a:hover { color: #cc88ff; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 760px) {
+    .page-wrapper { flex-direction: column; padding: 0 14px; }
+    .sidebar { width: 100%; padding-top: 0; }
+    .sb-block { display: flex; flex-wrap: wrap; }
+    .sb-title { width: 100%; }
+    .sb-block a { flex: 1 1 50%; }
+    .sb-compat { display: none; }
+    .site-title { font-size: 1.25rem; }
+    .ctrl-btn { width: 54px; height: 52px; font-size: 1.2rem; }
+  }
+  @media (max-width: 400px) {
+    .ctrl-btn { width: 46px; height: 48px; font-size: 1.1rem; }
+    .ctrl-buttons { gap: 7px; }
   }
 </style>
 </head>
@@ -49,8 +424,314 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W3WXZLTX"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
-<canvas id="gameCanvas" width="800" height="600"></canvas>
 
+<!-- ═══════════════════════════════════════════ HEADER -->
+<header class="site-header">
+  <div class="site-title">NEON <span>LANE SPLITTER</span></div>
+  <div class="site-subtitle" id="siteSubtitle">ARCADE RACING · VISTA AÉREA · BROWSER GAME</div>
+</header>
+
+<!-- ═══════════════════════════════════════════ MAIN -->
+<div class="page-wrapper">
+
+  <main class="main-col">
+
+    <!-- ── JUEGO ── -->
+    <section class="game-section">
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+      </div>
+      <div class="mobile-hint" id="mobileHint">
+        Toca <strong style="color:#00c8ff;">1 JUGADOR</strong> o <strong style="color:#ff2d96;">2 JUGADORES</strong> en el juego para empezar · Usa los botones de abajo para moverte
+      </div>
+      <!-- CONTROLES MÓVILES — no se superponen al canvas, van debajo -->
+      <div class="mobile-controls" id="mobileControls">
+        <div class="ctrl-half">
+          <div class="ctrl-player-label" id="p1Label" style="color:#00c8ff;">JUGADOR 1</div>
+          <div class="ctrl-buttons">
+            <button class="ctrl-btn ctrl-p1" id="btnP1L" aria-label="J1 izquierda">◀</button>
+            <button class="ctrl-btn ctrl-p1" id="btnP1R" aria-label="J1 derecha">▶</button>
+          </div>
+        </div>
+        <div class="ctrl-center">
+          <button class="ctrl-btn ctrl-esc" id="btnESC" aria-label="Pausa / Menú">⏸</button>
+          <div class="ctrl-center-label" id="pauseLabel">PAUSA</div>
+        </div>
+        <div class="ctrl-half" id="ctrlP2Side">
+          <div class="ctrl-player-label" id="p2Label" style="color:#ff2d96;">JUGADOR 2</div>
+          <div class="ctrl-buttons">
+            <button class="ctrl-btn ctrl-p2" id="btnP2L" aria-label="J2 izquierda">◀</button>
+            <button class="ctrl-btn ctrl-p2" id="btnP2R" aria-label="J2 derecha">▶</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SOBRE EL JUEGO ── -->
+    <section class="info-section">
+      <div class="highlight" id="highlight">
+        "Quería demostrar que se puede crear un videojuego arcade completo — con físicas,
+        puntuación, multijugador local y estética cuidada — usando únicamente HTML5, CSS y
+        JavaScript puro, sin ninguna librería externa."
+      </div>
+
+      <h2 class="sec" id="secGame">El juego</h2>
+      <p id="gameP1"><strong>Neon Lane Splitter</strong> es un arcade de carreras infinito con vista aérea y estética cyberpunk.
+        El objetivo es simple: esquiva los coches enemigos cambiando de carril el mayor tiempo posible.
+        Cada 10 segundos la velocidad aumenta un escalón — la dificultad no tiene techo.</p>
+      <p id="gameP2">El juego funciona a velocidad constante en cualquier ordenador, tablet o móvil, sin importar
+        los fotogramas por segundo del dispositivo. Esto se consigue mediante un sistema de físicas
+        basado en tiempo real (delta time): a 30 FPS o a 144 FPS, los coches se mueven exactamente igual.</p>
+      <p id="gameP3">En <strong>modo 2 jugadores</strong>, ambos jugadores compiten en el mismo dispositivo al mismo tiempo.
+        Gana quien sobreviva más tiempo. Además, en este modo aparecen ítems especiales en la carretera —
+        diamantes de colores que otorgan poderes temporales para desestabilizar al rival.</p>
+
+      <h2 class="sec" id="secOrigin">El origen</h2>
+      <p id="originP1">Neon Lane Splitter nació como un experimento personal: ¿hasta dónde se puede llevar
+        un juego de navegador usando solo las APIs nativas del navegador? Sin Phaser, sin Unity,
+        sin frameworks. Solo el Canvas de HTML5 y JavaScript vanilla.</p>
+      <p id="originP2">Lo que empezó como una prueba de concepto de fin de semana acabó convirtiéndose en un
+        arcade completo con modo para dos jugadores, dificultad progresiva, sistema de ítems y buff,
+        récords guardados en cookies, partículas y efectos visuales de neón. La estética cyberpunk
+        surgió de forma natural con el primer boceto — y se fue puliendo hasta el resultado final.</p>
+      <p id="originP3">Es el primer juego publicado de este proyecto. Hay más ideas en camino.</p>
+    </section>
+
+    <!-- ── PREGUNTAS FRECUENTES ── -->
+    <section class="info-section">
+      <h2 class="sec" id="secFaq">Preguntas frecuentes</h2>
+      <div id="faqContainer"></div>
+    </section>
+
+    <!-- ── TECNOLOGÍA ── -->
+    <section class="info-section">
+      <h2 class="sec" id="secTech">Tecnología utilizada</h2>
+      <div class="tech-grid">
+        <div class="tech-item"><span>▸</span>HTML5 Canvas API</div>
+        <div class="tech-item"><span>▸</span>JavaScript ES6+</div>
+        <div class="tech-item"><span>▸</span>CSS3</div>
+        <div class="tech-item"><span>▸</span>Google Analytics</div>
+        <div class="tech-item"><span>▸</span>Google AdSense</div>
+        <div class="tech-item"><span>▸</span>GitHub Pages</div>
+        <div class="tech-item"><span>▸</span>Pointer Events API</div>
+        <div class="tech-item"><span>▸</span>requestAnimationFrame</div>
+        <div class="tech-item"><span>▸</span>Cookie API</div>
+      </div>
+      <p id="techP1">Sin dependencias externas de juego. Todo el motor de físicas, la generación procedural
+        de obstáculos, el sistema de partículas, los efectos de glow y la interfaz están escritos
+        desde cero en menos de 1100 líneas de JavaScript.</p>
+      <p id="techP2">El sistema de controles táctiles usa la <strong>Pointer Events API</strong>, que funciona
+        tanto con touch como con ratón, y soporta múltiples toques simultáneos (multi-touch)
+        para que ambos jugadores puedan pulsar sus botones a la vez sin interferencias.</p>
+    </section>
+
+    <!-- ── CONTACTO ── -->
+    <section class="info-section">
+      <h2 class="sec" id="secContact">Contacto</h2>
+      <p id="contactIntro">¿Has encontrado un bug? ¿Tienes una sugerencia para mejorar el juego?
+        ¿Quieres hablar de publicidad o colaboraciones? Escríbenos.</p>
+      <div class="contact-box">
+        <p class="label" id="contactLabel">Correo electrónico</p>
+        <a class="address" href="mailto:theyoleryt@gmail.com">theyoleryt@gmail.com</a>
+        <div class="response-note" id="contactNote">⏱ Tiempo de respuesta habitual: 24–48 horas</div>
+      </div>
+      <ul class="topic-list" id="topicList">
+        <li>Bugs o errores en el juego (PC, móvil, tablet...)</li>
+        <li>Sugerencias de nuevas funciones o modos de juego</li>
+        <li>Problemas de visualización o rendimiento en tu dispositivo</li>
+        <li>Consultas sobre publicidad, AdSense o colaboraciones</li>
+        <li>Cualquier otra pregunta sobre el juego o el sitio</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <!-- ═══════ SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-block">
+      <div class="sb-title" id="sbPagesTitle">PÁGINAS</div>
+      <a href="sobre-nosotros.html" id="sbAbout">Sobre el Proyecto</a>
+      <a href="contacto.html" id="sbContact">Contacto</a>
+      <a href="legal.html" id="sbLegal">Aviso Legal</a>
+      <a href="privacy.html" id="sbPrivacy">Privacidad</a>
+    </div>
+
+    <div class="sb-compat">
+      <div class="sb-compat-title" id="sbCompatTitle">COMPATIBILIDAD</div>
+      <div class="sb-compat-item"><span class="dot dot-green"></span>Windows</div>
+      <div class="sb-compat-item"><span class="dot dot-green"></span>macOS</div>
+      <div class="sb-compat-item"><span class="dot dot-green"></span>Linux</div>
+      <div class="sb-compat-item"><span class="dot dot-green"></span>Android</div>
+      <div class="sb-compat-item"><span class="dot dot-green"></span>iOS / iPadOS</div>
+      <div class="sb-compat-item"><span class="dot dot-green"></span>Chrome OS</div>
+    </div>
+
+    <div class="sb-compat">
+      <div class="sb-compat-title" id="sbBrowsersTitle">NAVEGADORES</div>
+      <div class="sb-compat-item"><span class="dot dot-green"></span>Chrome / Edge</div>
+      <div class="sb-compat-item"><span class="dot dot-green"></span>Firefox</div>
+      <div class="sb-compat-item"><span class="dot dot-green"></span>Safari</div>
+      <div class="sb-compat-item"><span class="dot dot-yellow"></span><span id="sbOperaNote">Opera (no testado)</span></div>
+    </div>
+  </aside>
+
+</div><!-- /page-wrapper -->
+
+<!-- ═══════════════════════════════════════════ FOOTER -->
+<footer class="site-footer">
+  <p class="copy" id="footerCopy">COPYRIGHT © 2025 NEON LANE SPLITTER, TODOS LOS DERECHOS RESERVADOS.</p>
+  <nav class="footer-nav">
+    <a href="legal.html" id="footerLegal">Aviso Legal</a>
+    <a href="privacy.html" id="footerPrivacy">Política de Privacidad</a>
+    <a href="sobre-nosotros.html" id="footerAbout">Sobre el Proyecto</a>
+    <a href="contacto.html" id="footerContact">Contacto</a>
+  </nav>
+</footer>
+
+<!-- ═══════════════════════════════════════════ PAGE TRANSLATIONS -->
+<script>
+(function () {
+  var isES = (navigator.language || navigator.userLanguage || 'es').toLowerCase().startsWith('es');
+  document.documentElement.lang = isES ? 'es' : 'en';
+  if (!isES) document.title = 'Neon Lane Splitter — Browser Racing Arcade';
+
+  var T = {
+    es: {
+      subtitle:     'ARCADE RACING · VISTA AÉREA · BROWSER GAME',
+      mobileHint:   'Toca <strong style="color:#00c8ff;">1 JUGADOR</strong> o <strong style="color:#ff2d96;">2 JUGADORES</strong> en el juego para empezar · Usa los botones de abajo para moverte',
+      p1Label:      'JUGADOR 1',
+      p2Label:      'JUGADOR 2',
+      pauseLabel:   'PAUSA',
+      ariaP1L: 'J1 izquierda', ariaP1R: 'J1 derecha',
+      ariaP2L: 'J2 izquierda', ariaP2R: 'J2 derecha', ariaESC: 'Pausa / Menú',
+      highlight:    '&#x201c;Quería demostrar que se puede crear un videojuego arcade completo — con físicas, puntuación, multijugador local y estética cuidada — usando únicamente HTML5, CSS y JavaScript puro, sin ninguna librería externa.&#x201d;',
+      secGame:      'El juego',
+      gameP1:       '<strong>Neon Lane Splitter</strong> es un arcade de carreras infinito con vista aérea y estética cyberpunk. El objetivo es simple: esquiva los coches enemigos cambiando de carril el mayor tiempo posible. Cada 10 segundos la velocidad aumenta un escalón — la dificultad no tiene techo.',
+      gameP2:       'El juego funciona a velocidad constante en cualquier ordenador, tablet o móvil, sin importar los fotogramas por segundo del dispositivo. Esto se consigue mediante un sistema de físicas basado en tiempo real (delta time): a 30 FPS o a 144 FPS, los coches se mueven exactamente igual.',
+      gameP3:       'En <strong>modo 2 jugadores</strong>, ambos jugadores compiten en el mismo dispositivo al mismo tiempo. Gana quien sobreviva más tiempo. Además, en este modo aparecen ítems especiales en la carretera — diamantes de colores que otorgan poderes temporales para desestabilizar al rival.',
+      secOrigin:    'El origen',
+      originP1:     'Neon Lane Splitter nació como un experimento personal: ¿hasta dónde se puede llevar un juego de navegador usando solo las APIs nativas del navegador? Sin Phaser, sin Unity, sin frameworks. Solo el Canvas de HTML5 y JavaScript vanilla.',
+      originP2:     'Lo que empezó como una prueba de concepto de fin de semana acabó convirtiéndose en un arcade completo con modo para dos jugadores, dificultad progresiva, sistema de ítems y buff, récords guardados en cookies, partículas y efectos visuales de neón. La estética cyberpunk surgió de forma natural con el primer boceto — y se fue puliendo hasta el resultado final.',
+      originP3:     'Es el primer juego publicado de este proyecto. Hay más ideas en camino.',
+      secFaq:       'Preguntas frecuentes',
+      faq: [
+        { q: '¿Funciona en Mac o Linux?', a: 'Sí. Al ser un juego 100% de navegador, funciona perfectamente en cualquier sistema operativo — Windows, macOS, Linux, Chrome OS, Android, iOS… No se instala nada y no requiere Flash ni ningún plugin. Solo necesitas un navegador moderno (Chrome, Firefox, Safari, Edge o cualquier basado en Chromium).' },
+        { q: '¿Se puede jugar en móvil o tablet?', a: 'Sí. El juego escala automáticamente para adaptarse a la pantalla de tu dispositivo. Debajo del juego verás los botones táctiles: las flechas de la izquierda son para el Jugador 1 y las de la derecha para el Jugador 2. Para empezar, toca directamente sobre las opciones <strong style="color:#00c8ff;">1 JUGADOR</strong> o <strong style="color:#ff2d96;">2 JUGADORES</strong> que aparecen en pantalla.' },
+        { q: '¿Cómo funciona el modo 2 jugadores en móvil?', a: 'Los controles táctiles tienen una sección para cada jugador. Las flechas ◄► de la izquierda corresponden al Jugador 1, y las de la derecha al Jugador 2. Podéis jugar los dos a la vez en el mismo dispositivo — uno con el pulgar izquierdo y otro con el derecho. El botón central ⏸ activa la pausa en cualquier momento.' },
+        { q: '¿Cuáles son los ítems del modo 2 jugadores?', a: 'En modo 2 jugadores aparecen diamantes de colores en la carretera. Son tres tipos:<br><strong style="color:#ffaa00;">P — Empuje:</strong> al coincidir con el rival en el mismo carril lo empuja un carril en tu dirección. Dura 8 segundos.<br><strong style="color:#00aaff;">S — Escudo:</strong> absorbe el siguiente choque con un coche enemigo. No tiene tiempo límite.<br><strong style="color:#00ff88;">I — Inmunidad:</strong> durante 4 segundos eres invulnerable a enemigos y empujes.' },
+        { q: '¿La velocidad aumenta hasta el infinito?', a: 'Técnicamente sí — cada 10 segundos la velocidad sube un escalón sin límite. En la práctica, llega un punto en que es humanamente imposible reaccionar a tiempo. Ese es el reto. El juego no termina por tiempo: termina cuando el jugador no puede más. La puntuación refleja cuántos segundos has sobrevivido en total.' },
+        { q: '¿Hay modo online o multijugador en red?', a: 'Por ahora, no. El modo 2 jugadores es exclusivamente local — mismo teclado o mismo dispositivo táctil. Es una funcionalidad interesante para el futuro, pero añadir multijugador en red requiere una infraestructura de servidor que está fuera del alcance actual del proyecto.' },
+        { q: '¿Se guardan los récords?', a: 'Sí, usando cookies del navegador. Se guardan por separado el récord de 1 jugador y el de 2 jugadores. Los datos no salen de tu dispositivo ni se envían a ningún servidor. Si limpias las cookies del navegador, se borran también los récords.' },
+        { q: '¿Puedo usar un mando (gamepad)?', a: 'Actualmente no está soportado de forma oficial. El juego usa el teclado: teclas <strong>A / D</strong> para el Jugador 1 y <strong>← / →</strong> para el Jugador 2. En móvil, los botones táctiles hacen la misma función. El soporte para gamepad es algo que nos gustaría añadir en el futuro.' },
+        { q: '¿Necesito instalar Flash u otro plugin?', a: 'No. El juego está construido íntegramente con HTML5 Canvas, CSS3 y JavaScript puro. No necesitas Flash, Unity WebGL, ni ninguna extensión. Cualquier navegador moderno lo ejecuta directamente.' },
+        { q: '¿Hay combos o mecánicas avanzadas?', a: 'El juego tiene un sistema de “cola de movimientos”: puedes pulsar la dirección hasta dos veces seguidas y el juego ejecutará los cambios de carril en secuencia, incluso si el primero aún no ha terminado. Esto permite encadenar cambios rápidos de forma fluida. En modo 2 jugadores, coordinar el uso del ítem de Empuje con el movimiento del rival añade una capa táctica extra.' },
+        { q: '¿El juego va a 60 FPS en todos los dispositivos?', a: 'El juego usa <code>requestAnimationFrame</code> y delta time, así que se adapta automáticamente a la frecuencia de actualización de la pantalla. En un monitor a 144 Hz irá a 144 FPS; en un móvil a 60 Hz, a 60 FPS. La velocidad del juego es siempre la misma independientemente de los fotogramas — no va más rápido ni más lento según el dispositivo.' },
+        { q: '¿Cuántos carriles tiene la carretera?', a: 'La carretera tiene 6 carriles. El Jugador 1 empieza en el segundo carril por la izquierda y el Jugador 2 en el segundo por la derecha. Los coches enemigos aparecen aleatoriamente en cualquier carril — generalmente en grupos de 2, con cierta probabilidad de aparecer 3 simultáneos a velocidades altas.' },
+        { q: '¿Existe una versión descargable o para jugar sin conexión?', a: 'El juego está pensado para navegador y no tiene versión ejecutable descargable. Sin embargo, al tratarse de una página HTML estática podrías guardarla localmente con “Guardar página como” y jugar sin conexión a internet. Los récords seguirán funcionando ya que usan cookies locales.' }
+      ],
+      secTech:      'Tecnología utilizada',
+      techP1:       'Sin dependencias externas de juego. Todo el motor de físicas, la generación procedural de obstáculos, el sistema de partículas, los efectos de glow y la interfaz están escritos desde cero en menos de 1100 líneas de JavaScript.',
+      techP2:       'El sistema de controles táctiles usa la <strong>Pointer Events API</strong>, que funciona tanto con touch como con ratón, y soporta múltiples toques simultáneos (multi-touch) para que ambos jugadores puedan pulsar sus botones a la vez sin interferencias.',
+      secContact:   'Contacto',
+      contactIntro: '¿Has encontrado un bug? ¿Tienes una sugerencia para mejorar el juego? ¿Quieres hablar de publicidad o colaboraciones? Escríbenos.',
+      contactLabel: 'Correo electrónico',
+      contactNote:  '⏱ Tiempo de respuesta habitual: 24–48 horas',
+      topics: ['Bugs o errores en el juego (PC, móvil, tablet…)', 'Sugerencias de nuevas funciones o modos de juego', 'Problemas de visualización o rendimiento en tu dispositivo', 'Consultas sobre publicidad, AdSense o colaboraciones', 'Cualquier otra pregunta sobre el juego o el sitio'],
+      sbPages:   'PÁGINAS', sbAbout: 'Sobre el Proyecto', sbContact: 'Contacto', sbLegal: 'Aviso Legal', sbPrivacy: 'Privacidad',
+      sbCompat:  'COMPATIBILIDAD', sbBrowsers: 'NAVEGADORES', sbOperaNote: 'Opera (no testado)',
+      footerCopy: 'COPYRIGHT © 2025 NEON LANE SPLITTER, TODOS LOS DERECHOS RESERVADOS.',
+      footerLegal: 'Aviso Legal', footerPrivacy: 'Política de Privacidad', footerAbout: 'Sobre el Proyecto', footerContact: 'Contacto'
+    },
+    en: {
+      subtitle:     'ARCADE RACING · TOP-DOWN · BROWSER GAME',
+      mobileHint:   'Tap <strong style="color:#00c8ff;">1 PLAYER</strong> or <strong style="color:#ff2d96;">2 PLAYERS</strong> in the game to start · Use the buttons below to move',
+      p1Label:      'PLAYER 1',
+      p2Label:      'PLAYER 2',
+      pauseLabel:   'PAUSE',
+      ariaP1L: 'P1 left', ariaP1R: 'P1 right',
+      ariaP2L: 'P2 left', ariaP2R: 'P2 right', ariaESC: 'Pause / Menu',
+      highlight:    '&#x201c;I wanted to prove that you can build a complete arcade game — with physics, scoring, local multiplayer and polished visuals — using only HTML5, CSS and plain JavaScript, with no external libraries.&#x201d;',
+      secGame:      'The game',
+      gameP1:       '<strong>Neon Lane Splitter</strong> is an infinite top-down racing arcade with a cyberpunk aesthetic. The goal is simple: dodge enemy cars by switching lanes for as long as possible. Every 10 seconds the speed jumps up a notch — there is no difficulty ceiling.',
+      gameP2:       'The game runs at a consistent speed on any computer, tablet or phone, regardless of the device\'s frame rate. This is achieved through a real-time physics system (delta time): at 30 FPS or 144 FPS, cars move at exactly the same speed.',
+      gameP3:       'In <strong>2-player mode</strong>, both players compete on the same device at the same time. The last one standing wins. This mode also adds special items on the road — coloured diamonds that grant temporary powers to destabilise your opponent.',
+      secOrigin:    'The origin',
+      originP1:     'Neon Lane Splitter started as a personal experiment: how far can you push a browser game using only the browser\'s native APIs? No Phaser, no Unity, no frameworks — just the HTML5 Canvas and vanilla JavaScript.',
+      originP2:     'What began as a weekend proof-of-concept became a full arcade with 2-player mode, progressive difficulty, an item and buff system, cookie-based records, particles and neon visual effects. The cyberpunk aesthetic emerged naturally from the first sketch and was refined to what you see today.',
+      originP3:     'This is the first published game from this project. More ideas are on the way.',
+      secFaq:       'Frequently asked questions',
+      faq: [
+        { q: 'Does it work on Mac or Linux?', a: 'Yes. Since it\'s a 100% browser game, it works perfectly on any operating system — Windows, macOS, Linux, Chrome OS, Android, iOS… Nothing to install, no Flash or plugins required. You just need a modern browser (Chrome, Firefox, Safari, Edge or any Chromium-based browser).' },
+        { q: 'Can I play on mobile or tablet?', a: 'Yes. The game scales automatically to fit your device\'s screen. Below the game you\'ll see touch buttons: the arrows on the left are for Player 1 and the ones on the right for Player 2. To start, tap directly on the <strong style="color:#00c8ff;">1 PLAYER</strong> or <strong style="color:#ff2d96;">2 PLAYERS</strong> options shown on screen.' },
+        { q: 'How does 2-player mode work on mobile?', a: 'The touch controls have a section for each player. The ◄► arrows on the left are for Player 1, and those on the right for Player 2. Both of you can play at the same time on the same device — one with their left thumb and the other with their right. The centre button ⏸ pauses the game at any time.' },
+        { q: 'What are the 2-player mode items?', a: 'In 2-player mode, coloured diamonds appear on the road. There are three types:<br><strong style="color:#ffaa00;">P — Push:</strong> if you are in the same lane as your opponent, they get pushed one lane in your direction. Lasts 8 seconds.<br><strong style="color:#00aaff;">S — Shield:</strong> absorbs the next collision with an enemy car. No time limit.<br><strong style="color:#00ff88;">I — Immunity:</strong> for 4 seconds you are invulnerable to enemies and pushes.' },
+        { q: 'Does the speed increase forever?', a: 'Technically yes — every 10 seconds the speed goes up one step with no cap. In practice, there comes a point where it\'s humanly impossible to react in time. That\'s the challenge. The game doesn\'t end by time: it ends when the player can\'t keep up. Your score shows how many seconds you survived in total.' },
+        { q: 'Is there an online or network multiplayer mode?', a: 'Not yet. The 2-player mode is exclusively local — same keyboard or same touch device. It\'s an interesting feature for the future, but adding network multiplayer requires server infrastructure that is outside the current scope of the project.' },
+        { q: 'Are records saved?', a: 'Yes, using browser cookies. The 1-player and 2-player records are saved separately. The data never leaves your device or gets sent to any server. If you clear your browser cookies, the records are also cleared.' },
+        { q: 'Can I use a gamepad / controller?', a: 'Official gamepad support is not available yet. The game uses the keyboard: <strong>A / D</strong> keys for Player 1 and <strong>← / →</strong> for Player 2. On mobile, the touch buttons serve the same purpose. Gamepad support is something we\'d like to add in the future.' },
+        { q: 'Do I need Flash or any other plugin?', a: 'No. The game is built entirely with HTML5 Canvas, CSS3 and plain JavaScript. No Flash, Unity WebGL or any extension required. Any modern browser runs it directly.' },
+        { q: 'Are there combos or advanced mechanics?', a: 'The game has a "move queue" system: you can press a direction up to twice in a row and the game will execute the lane changes in sequence, even if the first one hasn\'t finished yet. This lets you chain quick moves smoothly. In 2-player mode, timing a Push item to coincide with your opponent\'s movement adds an extra tactical layer.' },
+        { q: 'Does the game run at 60 FPS on all devices?', a: 'The game uses <code>requestAnimationFrame</code> and delta time, so it adapts automatically to the screen\'s refresh rate. On a 144 Hz monitor it\'ll run at 144 FPS; on a 60 Hz phone, at 60 FPS. The game speed is always the same regardless of frame rate — it doesn\'t speed up or slow down depending on the device.' },
+        { q: 'How many lanes does the road have?', a: 'The road has 6 lanes. Player 1 starts in the second lane from the left and Player 2 in the second from the right. Enemy cars appear randomly in any lane — usually in groups of 2, with a chance of 3 appearing simultaneously at high speeds.' },
+        { q: 'Is there a downloadable version or offline play?', a: 'The game is designed for the browser and has no downloadable executable. However, since it\'s a static HTML page you could save it locally with "Save page as" and play without an internet connection. Records will still work since they use local cookies.' }
+      ],
+      secTech:      'Technology used',
+      techP1:       'No external game dependencies. The entire physics engine, procedural obstacle generation, particle system, glow effects and UI are written from scratch in under 1,100 lines of JavaScript.',
+      techP2:       'The touch control system uses the <strong>Pointer Events API</strong>, which works with both touch and mouse input and supports simultaneous multi-touch so both players can press their buttons at the same time without interference.',
+      secContact:   'Contact',
+      contactIntro: 'Found a bug? Have a suggestion to improve the game? Want to talk about advertising or collaborations? Write to us.',
+      contactLabel: 'Email',
+      contactNote:  '⏱ Typical response time: 24–48 hours',
+      topics: ['Bugs or errors in the game (PC, mobile, tablet…)', 'Suggestions for new features or game modes', 'Display or performance issues on your device', 'Questions about advertising, AdSense or collaborations', 'Any other question about the game or the site'],
+      sbPages:   'PAGES', sbAbout: 'About the Project', sbContact: 'Contact', sbLegal: 'Legal Notice', sbPrivacy: 'Privacy',
+      sbCompat:  'COMPATIBILITY', sbBrowsers: 'BROWSERS', sbOperaNote: 'Opera (untested)',
+      footerCopy: 'COPYRIGHT © 2025 NEON LANE SPLITTER, ALL RIGHTS RESERVED.',
+      footerLegal: 'Legal Notice', footerPrivacy: 'Privacy Policy', footerAbout: 'About the Project', footerContact: 'Contact'
+    }
+  };
+
+  var t = isES ? T.es : T.en;
+
+  function g(id) { return document.getElementById(id); }
+  function st(id, v) { var el = g(id); if (el) el.textContent = v; }
+  function sh(id, v) { var el = g(id); if (el) el.innerHTML = v; }
+  function sa(id, attr, v) { var el = g(id); if (el) el.setAttribute(attr, v); }
+
+  sh('siteSubtitle', t.subtitle);
+  sh('mobileHint', t.mobileHint);
+  st('p1Label', t.p1Label);
+  st('p2Label', t.p2Label);
+  st('pauseLabel', t.pauseLabel);
+  sa('btnP1L', 'aria-label', t.ariaP1L); sa('btnP1R', 'aria-label', t.ariaP1R);
+  sa('btnP2L', 'aria-label', t.ariaP2L); sa('btnP2R', 'aria-label', t.ariaP2R);
+  sa('btnESC', 'aria-label', t.ariaESC);
+  sh('highlight', t.highlight);
+  st('secGame', t.secGame);
+  sh('gameP1', t.gameP1); sh('gameP2', t.gameP2); sh('gameP3', t.gameP3);
+  st('secOrigin', t.secOrigin);
+  st('originP1', t.originP1); st('originP2', t.originP2); st('originP3', t.originP3);
+  st('secFaq', t.secFaq);
+  var fc = g('faqContainer');
+  if (fc) fc.innerHTML = t.faq.map(function(i) {
+    return '<div class="faq-item"><div class="faq-q">' + i.q + '</div><div class="faq-a">' + i.a + '</div></div>';
+  }).join('');
+  st('secTech', t.secTech);
+  sh('techP1', t.techP1); sh('techP2', t.techP2);
+  st('secContact', t.secContact);
+  st('contactIntro', t.contactIntro);
+  st('contactLabel', t.contactLabel);
+  st('contactNote', t.contactNote);
+  var tl = g('topicList');
+  if (tl) tl.innerHTML = t.topics.map(function(i) { return '<li>' + i + '</li>'; }).join('');
+  st('sbPagesTitle', t.sbPages); st('sbAbout', t.sbAbout); st('sbContact', t.sbContact);
+  st('sbLegal', t.sbLegal); st('sbPrivacy', t.sbPrivacy);
+  st('sbCompatTitle', t.sbCompat); st('sbBrowsersTitle', t.sbBrowsers); st('sbOperaNote', t.sbOperaNote);
+  st('footerCopy', t.footerCopy); st('footerLegal', t.footerLegal); st('footerPrivacy', t.footerPrivacy);
+  st('footerAbout', t.footerAbout); st('footerContact', t.footerContact);
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════ GAME SCRIPT -->
 <script>
 (function () {
 
@@ -58,10 +739,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   const ctx    = canvas.getContext('2d');
   const W = 800, H = 600;
 
-  /* ================================================================
-     LOCALIZACIÓN — detecta idioma del navegador
-     Añade aquí nuevas claves si añades textos nuevos.
-     ================================================================ */
   const isSpanish = (navigator.language || navigator.userLanguage || 'es')
                       .toLowerCase().startsWith('es');
 
@@ -80,19 +757,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       footerPrivacy:  'Política de Privacidad',
       footerAbout:    'Sobre el Proyecto',
       footerContact:  'Contacto',
-      // HUD
       p1score:        (n) => `P1: ${n}pts`,
       p2score:        (n) => `P2: ${n}pts`,
       buffPush:       'EMPUJE',
       buffShield:     'ESCUDO',
       buffImmune:     'INMUNE',
-      // Pausa
       pauseTitle:     'PAUSA',
       pauseResume:    '▶  CONTINUAR',
       pauseHowto:     '?  CÓMO JUGAR',
       pauseQuit:      '✕  SALIR AL MENÚ',
       pauseHint:      'ESC · continuar   —   clic en la opción',
-      // Cómo jugar
       howtoTitle:     'CÓMO JUGAR',
       howtoObjTitle:  'OBJETIVO',
       howtoObj1:      'Esquiva los coches enemigos rojos cambiando de carril.',
@@ -113,7 +787,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         { name:'ESCUDO  (S)',  desc:'Absorbe el siguiente choque con un coche enemigo. Sin tiempo.' },
         { name:'INMUNE  (I)', desc:'Eres invulnerable a enemigos y empujes durante 4 seg.' },
       ],
-      // Game Over
       goEnd:          'FIN DE LA CARRERA',
       goWin1:         '¡EL JUGADOR 1 HA GANADO LA CARRERA!',
       goWin2:         '¡EL JUGADOR 2 HA GANADO LA CARRERA!',
@@ -122,6 +795,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       goP2:           (n, rec) => `JUGADOR 2 — ${n} PTS${rec ? '  ★ RÉCORD' : ''}`,
       goBack:         '[ ESC ]  VOLVER AL MENÚ',
       goReplay:       'o pulsa 1 / 2 para jugar de nuevo directamente',
+      tapBack:        'Toca para volver al menú',
     },
     en: {
       subtitle:       'ARCADE RACING · TOP-DOWN VIEW',
@@ -137,19 +811,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       footerPrivacy:  'Privacy Policy',
       footerAbout:    'About',
       footerContact:  'Contact',
-      // HUD
       p1score:        (n) => `P1: ${n}pts`,
       p2score:        (n) => `P2: ${n}pts`,
       buffPush:       'PUSH',
       buffShield:     'SHIELD',
       buffImmune:     'IMMUNE',
-      // Pause
       pauseTitle:     'PAUSED',
       pauseResume:    '▶  RESUME',
       pauseHowto:     '?  HOW TO PLAY',
       pauseQuit:      '✕  QUIT TO MENU',
       pauseHint:      'ESC · resume   —   click an option',
-      // How to play
       howtoTitle:     'HOW TO PLAY',
       howtoObjTitle:  'OBJECTIVE',
       howtoObj1:      'Dodge the red enemy cars by switching lanes.',
@@ -170,7 +841,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         { name:'SHIELD  (S)',  desc:'Absorbs the next hit from an enemy car. No time limit.' },
         { name:'IMMUNE  (I)', desc:'Invulnerable to enemies and pushes for 4 sec.' },
       ],
-      // Game Over
       goEnd:          'RACE OVER',
       goWin1:         'PLAYER 1 HAS WON THE RACE!',
       goWin2:         'PLAYER 2 HAS WON THE RACE!',
@@ -179,12 +849,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       goP2:           (n, rec) => `PLAYER 2 — ${n} PTS${rec ? '  ★ RECORD' : ''}`,
       goBack:         '[ ESC ]  BACK TO MENU',
       goReplay:       'or press 1 / 2 to play again directly',
+      tapBack:        'Tap to return to menu',
     },
   };
 
   const T = isSpanish ? LANG.es : LANG.en;
 
-  /* ── CONSTANTES ──────────────────────────────────────────────────────── */
+  /* ── CONSTANTES ── */
   const ROAD_X     = 220;
   const ROAD_W     = 360;
   const ROAD_RIGHT = ROAD_X + ROAD_W;
@@ -221,7 +892,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     buffImmune:'#00ff88',  buffImmuneGlow:'rgba(0,255,136,0.75)',
   };
 
-  // 'menu' | 'howto' | 'playing' | 'paused' | 'gameover'
   let gameState = 'menu';
   let mode      = 1;
   let roadOffset, roadSpeed, spawnTimer, speedTimer;
@@ -299,9 +969,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         speed: Math.random()*0.4+0.1 });
   }
 
-  /* ================================================================
-     UPDATE
-     ================================================================ */
+  /* ── UPDATE ── */
   function update(dt) {
     if (gameState !== 'playing') return;
 
@@ -463,7 +1131,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
   }
 
-  /* ── BUFFS ───────────────────────────────────────────────────────────── */
+  /* ── BUFFS ── */
   function spawnBuff() {
     const types = ['push','shield','immunity'];
     const type  = types[Math.floor(Math.random() * types.length)];
@@ -545,9 +1213,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
   }
 
-  /* ================================================================
-     DRAW
-     ================================================================ */
+  /* ── DRAW ── */
   function draw() {
     ctx.clearRect(0, 0, W, H);
     if (gameState === 'menu')     { drawMenu();     return; }
@@ -705,9 +1371,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     ctx.shadowBlur = 0; ctx.textAlign = 'left';
   }
 
-  /* ================================================================
-     MENÚ
-     ================================================================ */
+  /* ── MENÚ ── */
   function drawMenu() {
     ctx.fillStyle = C.bg; ctx.fillRect(0,0,W,H);
     ctx.fillStyle = 'rgba(13,13,32,0.7)'; ctx.fillRect(ROAD_X,0,ROAD_W,H);
@@ -778,9 +1442,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     ctx.textAlign = 'left';
   }
 
-  /* ================================================================
-     CÓMO JUGAR / HOW TO PLAY
-     ================================================================ */
+  /* ── CÓMO JUGAR ── */
   function drawHowTo() {
     ctx.fillStyle = C.bg; ctx.fillRect(0,0,W,H);
     ctx.textAlign = 'center';
@@ -860,9 +1522,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     ctx.shadowBlur = 0; ctx.textAlign = 'left';
   }
 
-  /* ================================================================
-     PAUSA
-     ================================================================ */
+  /* ── PAUSA ── */
   function drawPaused() {
     ctx.fillStyle = 'rgba(5,5,16,0.82)'; ctx.fillRect(0,0,W,H);
 
@@ -899,9 +1559,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     ctx.textAlign = 'left';
   }
 
-  /* ================================================================
-     GAME OVER
-     ================================================================ */
+  /* ── GAME OVER ── */
   function drawGameOver() {
     ctx.fillStyle = 'rgba(5,5,16,0.95)'; ctx.fillRect(0,0,W,H);
     drawParticles();
@@ -943,11 +1601,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     ctx.font = 'bold 20px Courier New';
     ctx.fillText(T.goBack, W/2, 400);
     ctx.font = '13px Courier New'; ctx.fillStyle = C.uiDim; ctx.shadowBlur = 0;
+    if (T.tapBack) {
+      ctx.fillStyle = '#3a3a6a'; ctx.font = '11px Courier New';
+      ctx.fillText(T.tapBack, W/2, 460);
+    }
     ctx.fillText(T.goReplay, W/2, 434);
     ctx.textAlign = 'left';
   }
 
-  /* ── Helpers de texto ────────────────────────────────────────────────── */
+  /* ── Helpers ── */
   function sectionTitle(text, x, y) {
     ctx.shadowColor = 'rgba(120,0,255,0.5)'; ctx.shadowBlur = 10;
     ctx.fillStyle = C.title; ctx.font = 'bold 14px Courier New'; ctx.textAlign = 'center';
@@ -968,9 +1630,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     context.fillText(line, x, y);
   }
 
-  /* ================================================================
-     INPUT
-     ================================================================ */
+  /* ── INPUT ── */
   document.addEventListener('keydown', e => {
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code))
       e.preventDefault();
@@ -1003,9 +1663,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     delete keyJustPressed[e.code + 2];
   });
 
-  /* ================================================================
-     LOOP
-     ================================================================ */
+  /* Evitar scroll al tocar el canvas en móvil */
+  canvas.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+  canvas.addEventListener('touchmove',  e => e.preventDefault(), { passive: false });
+
+  /* ── LOOP ── */
   function loop(timestamp) {
     const rawDt = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
@@ -1023,13 +1685,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   canvas.setAttribute('tabindex','0');
   window.addEventListener('load', () => canvas.focus());
-  document.addEventListener('click', () => canvas.focus());
+  canvas.addEventListener('click', () => canvas.focus());
 
-  /* ── Clicks en canvas ────────────────────────────────────────────────── */
+  /* ── Clicks / taps en canvas ── */
   canvas.addEventListener('click', e => {
     const rect = canvas.getBoundingClientRect();
     const cx = (e.clientX - rect.left) * (W / rect.width);
     const cy = (e.clientY - rect.top)  * (H / rect.height);
+
+    if (gameState === 'gameover') { gameState = 'menu'; return; }
 
     if (gameState === 'paused') {
       const ph = 280, py = H/2 - ph/2;
@@ -1054,6 +1718,87 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
   });
 
+  /* ── Exponer API para controles móviles ── */
+  window._nls = {
+    press:   (code) => { keys[code] = true; },
+    release: (code) => {
+      keys[code] = false;
+      delete keyJustPressed[code + 1];
+      delete keyJustPressed[code + 2];
+    },
+    escape: () => {
+      if      (gameState === 'playing')  gameState = 'paused';
+      else if (gameState === 'paused')   gameState = 'playing';
+      else if (gameState === 'gameover') gameState = 'menu';
+      else if (gameState === 'howto')    gameState = 'menu';
+    },
+    getMode:  () => mode,
+    getState: () => gameState,
+  };
+
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════ MOBILE CONTROLS SCRIPT -->
+<script>
+(function () {
+  /* Bind un botón a una tecla del juego via Pointer Events (multi-touch) */
+  function bindKey(id, code) {
+    const btn = document.getElementById(id);
+    if (!btn || !window._nls) return;
+
+    btn.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      this.setPointerCapture(e.pointerId);
+      this.classList.add('pressed');
+      window._nls.press(code);
+    }, { passive: false });
+
+    const release = function (e) {
+      e.preventDefault();
+      this.classList.remove('pressed');
+      window._nls.release(code);
+    };
+    btn.addEventListener('pointerup',     release, { passive: false });
+    btn.addEventListener('pointercancel', release, { passive: false });
+  }
+
+  /* Espera a que el script del juego cargue _nls */
+  function setup() {
+    if (!window._nls) { requestAnimationFrame(setup); return; }
+
+    bindKey('btnP1L', 'KeyA');
+    bindKey('btnP1R', 'KeyD');
+    bindKey('btnP2L', 'ArrowLeft');
+    bindKey('btnP2R', 'ArrowRight');
+
+    const btnESC = document.getElementById('btnESC');
+    if (btnESC) {
+      btnESC.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        window._nls.escape();
+      }, { passive: false });
+    }
+
+    /* Atenuar controles P2 cuando se está en modo 1 jugador */
+    const p2side = document.getElementById('ctrlP2Side');
+    if (!p2side) return;
+
+    let lastMode = null, lastState = null;
+    function updateP2Dim() {
+      const m = window._nls.getMode();
+      const s = window._nls.getState();
+      if (m === lastMode && s === lastState) { requestAnimationFrame(updateP2Dim); return; }
+      lastMode = m; lastState = s;
+      const active = (m === 2) && (s === 'playing' || s === 'paused');
+      p2side.style.opacity       = active ? '1'    : '0.3';
+      p2side.style.pointerEvents = active ? 'auto' : 'none';
+      requestAnimationFrame(updateP2Dim);
+    }
+    updateP2Dim();
+  }
+
+  setup();
 })();
 </script>
 </body>

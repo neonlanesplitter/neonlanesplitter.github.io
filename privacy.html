@@ -81,9 +81,20 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W3WXZLTX"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
+<script>
+(function(){
+  var es=(navigator.language||navigator.userLanguage||'es').toLowerCase().startsWith('es');
+  document.documentElement.lang=es?'es':'en';
+  if(!es)document.title='Privacy Policy — Neon Lane Splitter';
+  document.addEventListener('DOMContentLoaded',function(){
+    var b=document.getElementById('backLink');
+    if(b)b.textContent=es?'← Volver al juego':'← Back to game';
+  });
+})();
+</script>
 <div class="container">
 
-  <a class="back" href="index.html">← Volver al juego</a>
+  <a class="back" id="backLink" href="index.html">← Volver al juego</a>
 
   <h1>Política de Privacidad</h1>
   <p class="subtitle">Neon Lane Splitter</p>
